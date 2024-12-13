@@ -1,0 +1,29 @@
+[package]
+name = "tavtop"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+color-eyre = "*"
+rstest = "*"
+rayon = "*"
+const_panic = "*"
+serde = {version = "*", features = ["derive"]}
+serde_json = "*"
+home = "*"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+enum_glob_use = {level = "deny", priority = 0}
+pedantic = {level = "deny", priority = -1}
+nursery = {level = "deny", priority = -1}
+unwrap_used = {level = "deny", priority = 0}
+
+[probile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+stip = "symbols"

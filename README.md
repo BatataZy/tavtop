@@ -1,2 +1,2 @@
 # tavtop
- A time-averaged resource monitor meant to give more accurate measurements.
+ A time-averaged resource monitor written in Rust meant to give more accurate measurements.
