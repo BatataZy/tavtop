@@ -7,10 +7,12 @@ edition = "2021"
 color-eyre = "*"
 rstest = "*"
 rayon = "*"
-const_panic = "*"
+const_panic = "0.2.11"
+
+num-traits = "*"
 serde = {version = "*", features = ["derive"]}
 serde_json = "*"
-home = "*"
+home = "0.5.11"
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -21,8 +23,8 @@ pedantic = {level = "deny", priority = -1}
 nursery = {level = "deny", priority = -1}
 unwrap_used = {level = "deny", priority = 0}
 
-[probile.release]
-opt-level = "z"
+[profile.release]
+opt-level = 0
 lto = true
 codegen-units = 1
 panic = "abort"

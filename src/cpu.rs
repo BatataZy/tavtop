@@ -1,6 +1,7 @@
-use crate::{read, unit_types::{Delta, Magnitude}, ITER};
 
-#[derive(Debug)]
+use crate::{read, unit_types::{Delta, Magnitude}};
+
+#[derive(Clone, Debug)]
 pub struct Cpu {
     pub threads:usize,
     pub clock: Vec<Magnitude>,
@@ -22,19 +23,18 @@ impl Cpu {
             temp: 0.,
     }}
 
+
     pub fn update(&mut self) {
 
         //CPU CLOCK LOGIC
         self.clock.iter_mut().zip(0..).for_each(|(clock, i)| {
+            
+            let current_clock = (read(&("/sys/devices/system/cpu/cpu".to_owned() + &i.to_string() + "/cpufreq/scaling_cur_freq"), 0, 0)
+                .parse::<f32>().unwrap()/1000.).round() as u16;
 
-            clock.average -= clock.values[clock.index]/ITER as u32;
-            clock.values[clock.index] = (read(&("/sys/devices/system/cpu/cpu".to_owned() + &i.to_string() + "/cpufreq/scaling_cur_freq"), 0, 0)
-                .parse::<f32>().unwrap()/1000.).round() as u32;
-            clock.average += clock.values[clock.index]/ITER as u32;
-
-            clock.index = (clock.index + 1) % ITER;
+            clock.add(current_clock);
         });
-
+        
         //CPU UTIL LOGIC
         self.total_time.iter_mut().zip(self.idle_time.iter_mut()).zip(self.util.iter_mut()).zip(
 
@@ -46,16 +46,11 @@ impl Cpu {
                 )).map(|(((total, idle), util),cur)| (total, idle, util, cur))
                     .for_each(|(total, idle, util, cur)| {
 
-                        total.delta = cur.iter().sum::<u32>() - total.values[total.index] as u32;
-                        total.values[total.index] = cur.iter().sum::<u32>();
+                        total.add(cur.iter().sum::<u32>());
 
-                        idle.delta = cur[3] + cur[4] - idle.values[idle.index] as u32;
-                        idle.values[idle.index] = cur[3] + cur[4];
+                        idle.add(cur[3] + cur[4]);
 
                         *util = 100 - (idle.delta as f32/total.delta as f32 * 100.).round() as u8; 
-
-                        total.index = (total.index + 1) % ITER;
-                        idle.index = (idle.index + 1) % ITER;
                     }
         );
 
