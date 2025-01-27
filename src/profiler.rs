@@ -23,7 +23,10 @@ impl Profiler {
 
         if self.max < self.times.average as u16 {self.max = self.times.average as u16}
 
-        println!("{:?}", (self.times.average, self.max))
+        if self.times.index == 0 {
+            println!("{:?}", (self.times.average, self.max));
+            self.max = 0
+        }
         
     }
 }
