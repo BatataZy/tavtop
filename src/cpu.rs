@@ -1,7 +1,7 @@
 
 use crate::{read, unit_types::{Delta, Magnitude}};
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Cpu {
     pub threads:usize,
     pub clock: Vec<Magnitude>,
@@ -41,7 +41,7 @@ impl Cpu {
         self.total_time.iter_mut().zip(self.idle_time.iter_mut()).zip(self.util.iter_mut()).zip(
 
             read("/proc/stat", buf, 0, 0)
-                .split('\n').zip(0..).filter(|(_, i)| *i <= self.threads && *i >= 1).map(|x|
+                .split('\n').zip(0..).filter(|(_, i)| i <= &self.threads && i >= &1).map(|x|
                     x.0.to_owned()
                 ).map(|x|
                     x.split(" ").filter_map(|x| x.parse::<u32>().ok()).collect::<Vec<u32>>()

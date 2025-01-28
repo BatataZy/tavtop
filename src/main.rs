@@ -8,6 +8,7 @@ mod profiler; use profiler::Profiler;
 mod result; use result::Result;
 mod cpu; use cpu::Cpu;
 mod gpu; use gpu::Gpu;
+mod ram; use ram::Memory;
 mod unit_types;
 
 
@@ -20,7 +21,7 @@ fn main() {
 
     let mut buf: String = String::with_capacity(4096);
     
-    let profiling = true;
+    let profiling = false;
 
     let write_path = home_dir().unwrap().join(".data");
 
@@ -29,6 +30,7 @@ fn main() {
     
     let mut cpu = Cpu::new(&mut buf);
     let mut gpu = Gpu::new(&mut buf);
+    let mut mem = Memory::new(&mut buf);
 
     let mut profiler = Profiler::new();
 
@@ -39,11 +41,13 @@ fn main() {
 
         gpu.update(&mut buf);
 
+        mem.update(&mut buf);
+
+        let _ = fs::write(&write_path.join("result").to_str().unwrap().to_owned(),serde_json::to_string_pretty(&Result::new(&cpu, &gpu, &mem)).unwrap());
+
+        let _ = fs::write(&write_path.join("result_pretty").to_str().unwrap().to_owned(),serde_json::to_string_pretty(&Result::new(&cpu, &gpu, &mem).prettify()).unwrap());
+
         end = time::Instant::now();
-
-        let _ = fs::write(&write_path.join("result").to_str().unwrap().to_owned(),serde_json::to_string_pretty(&Result::new(cpu.clone(), gpu.clone())).unwrap());
-
-        let _ = fs::write(&write_path.join("result_pretty").to_str().unwrap().to_owned(),serde_json::to_string_pretty(&Result::new(cpu.clone(), gpu.clone()).prettify()).unwrap());
 
         if profiling {profiler.update(start, end)}
 

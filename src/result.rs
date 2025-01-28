@@ -1,4 +1,4 @@
-use crate::{cpu::Cpu, gpu::Gpu, median, unit_types::Size};
+use crate::{cpu::Cpu, gpu::Gpu, median, ram::Memory};
 use serde;
 
 static NULL: &str = " ";
@@ -57,7 +57,7 @@ struct CpuResult {
     pub temp: String,
 }
 impl CpuResult {
-    pub fn new(cpu: Cpu) -> CpuResult {
+    pub fn new(cpu: &Cpu) -> CpuResult {
 
         let clocks = cpu.clock.iter().map(|x| x.average.round() as u16);
         let utils = cpu.util.iter();
@@ -98,15 +98,18 @@ struct GpuResult {
     pub clock: String,
     pub util: String,
     pub temp: String,
-    pub vram: Size,
+    pub vram: Swap,
 }
 impl GpuResult {
-    pub fn new(gpu: Gpu) -> GpuResult {
+    pub fn new(gpu: &Gpu) -> GpuResult {
         GpuResult {
             clock: gpu.clock.average.round().to_string(),
             util: gpu.util.average.round().abs().min(99.).to_string(),
             temp:  format!("{:.1}", gpu.temp),
-            vram: gpu.memory,
+            vram: Swap {
+                allocated: gpu.memory.used.to_string(),
+                total: gpu.memory.total.to_string()
+            }
         }
     }
 
@@ -115,20 +118,70 @@ impl GpuResult {
         GpuResult {
             clock: prettify(&self.clock, 4, NULL, "MHz"),
             util: prettify(&self.util, 2, "0", "%"),
-            temp: prettify(&self.temp, 4, "4", "°C"),
-            vram: self.vram
+            temp: prettify(&self.temp, 4, NULL, "°C"),
+            vram: self.vram.prettify()
         }
     }
 }
 
 
 #[derive(serde::Serialize)]
-struct RamResult {
-    
+struct Ram {
+    used: String,
+    allocated: String,
+    total: String
 }
-impl RamResult {
-    fn prettify(self) -> RamResult {
-        self
+impl Ram {
+    fn prettify(self) -> Ram {
+        Ram {
+            used: prettify(&self.used, self.total.len(), NULL, "MiB"),
+            allocated: prettify(&self.allocated, self.total.len(), NULL, "MiB"),
+            total: self.total + "MiB"
+        }
+    }
+}
+
+
+#[derive(serde::Serialize)]
+struct Swap {
+    allocated: String,
+    total: String
+}
+impl Swap {
+    fn prettify(self) -> Swap {
+        Swap {
+            allocated: prettify(&self.allocated, self.total.len(), NULL, "MiB"),
+            total: self.total + "MiB"
+        }
+    }
+}
+
+
+#[derive(serde::Serialize)]
+struct MemoryResult {
+    ram: Ram,
+    swap: Swap,
+}
+impl MemoryResult {
+    fn new (mem: &Memory) -> MemoryResult {
+        MemoryResult {
+            ram: Ram {
+                used: mem.ram.used.to_string(),
+                allocated: mem.ram.allocated.to_string(),
+                total: mem.ram.total.to_string()
+            },
+            swap: Swap {
+                allocated: mem.swap.allocated.to_string(),
+                total: mem.swap.total.to_string()
+            }
+        }
+    }
+
+    fn prettify(self) -> MemoryResult {
+        MemoryResult {
+            ram: self.ram.prettify(),
+            swap: self.swap.prettify()
+        }
     }
 }
 
@@ -159,16 +212,16 @@ impl NetworkResult {
 pub struct Result {
     cpu: CpuResult,
     gpu: GpuResult,
-    ram: RamResult,
+    memory: MemoryResult,
     disk: DiskResult,
     network: NetworkResult
 }
 impl Result {
-    pub fn new(cpu: Cpu, gpu: Gpu) -> Result {
+    pub fn new(cpu: &Cpu, gpu: &Gpu, mem: &Memory) -> Result {
         Result {
             cpu: CpuResult::new(cpu),
             gpu: GpuResult::new(gpu),
-            ram: RamResult {  },
+            memory: MemoryResult::new(mem),
             disk: DiskResult {  },
             network: NetworkResult {  }
         }
@@ -178,7 +231,7 @@ impl Result {
         Result{
             cpu: self.cpu.prettify(),
             gpu: self.gpu.prettify(),
-            ram: self.ram.prettify(),
+            memory: self.memory.prettify(),
             disk: self.disk.prettify(),
             network: self.network.prettify(),
         }

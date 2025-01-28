@@ -3,7 +3,7 @@ use std::usize;
 
 use crate::{read, unit_types::{Magnitude, Percent, Size}};
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Gpu{
     pub card: u8,
     pub clock: Magnitude,
